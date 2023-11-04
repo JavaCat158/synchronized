@@ -48,7 +48,7 @@ public class Main {
             }
         }
         executorService.shutdown(); // завершение пул потоков
-        executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); // ожидание завершеия всех потоков
+        executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); // ожидание завершения всех потоков
         long endTs = System.currentTimeMillis(); // end time
         System.out.println("Max Interval: " + maxInterval);      // максимальное количество интервалов
         System.out.println("Time: " + (endTs - startTs) + "ms"); // время выполнения пула потоков
