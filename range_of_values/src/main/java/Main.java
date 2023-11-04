@@ -1,8 +1,9 @@
 import java.util.*;
+import java.util.concurrent.*;
 
 public class Main {
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
         String[] texts = new String[25];
         for (int i = 0; i < texts.length; i++) {
             texts[i] = generateText("aab", 30_000);
@@ -10,10 +11,11 @@ public class Main {
 
         long startTs = System.currentTimeMillis(); // start time
 
-        List<Thread> threads = new ArrayList<>();
+        ExecutorService executorService = Executors.newFixedThreadPool(10); // выбор количества пула потоков
+        List<Future<Integer>> futures = new ArrayList<>(); // список Future для хранения интервалов для каждой строки
 
         for (String text : texts) {
-            Thread thread = new Thread(() -> {
+            Callable<Integer> task= () -> {
                 int maxSize = 0;
                 for (int i = 0; i < text.length(); i++) {
                     for (int j = 0; j < text.length(); j++) {
@@ -32,19 +34,24 @@ public class Main {
                         }
                     }
                 }
-                System.out.println(text.substring(0, 100) + " -> " + maxSize);
-            });
-            threads.add(thread);
-            thread.start();
+                return maxSize;
+            };
+            Future<Integer> future = executorService.submit(task);
+            futures.add(future);
         }
+        int maxInterval = 0;
 
-        for (Thread thread : threads) {
-            thread.join();
+        for(Future<Integer> future: futures) {
+            int interval = future.get();
+            if (interval > maxInterval) {
+                maxInterval = interval;
+            }
         }
-
+        executorService.shutdown(); // завершение пул потоков
+        executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); // ожидание завершеия всех потоков
         long endTs = System.currentTimeMillis(); // end time
-
-        System.out.println("Time: " + (endTs - startTs) + "ms");
+        System.out.println("Max Interval: " + maxInterval);      // максимальное количество интервалов
+        System.out.println("Time: " + (endTs - startTs) + "ms"); // времся выполнения пула потоков
     }
 
     public static String generateText(String letters, int length) {
