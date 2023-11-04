@@ -11,7 +11,7 @@ public class Main {
 
         long startTs = System.currentTimeMillis(); // start time
 
-        ExecutorService executorService = Executors.newFixedThreadPool(10); // выбор количества пула потоков
+        ExecutorService executorService = Executors.newFixedThreadPool(10); // выбор количества потоков в пуле
         List<Future<Integer>> futures = new ArrayList<>(); // список Future для хранения интервалов для каждой строки
 
         for (String text : texts) {
@@ -51,7 +51,7 @@ public class Main {
         executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS); // ожидание завершеия всех потоков
         long endTs = System.currentTimeMillis(); // end time
         System.out.println("Max Interval: " + maxInterval);      // максимальное количество интервалов
-        System.out.println("Time: " + (endTs - startTs) + "ms"); // времся выполнения пула потоков
+        System.out.println("Time: " + (endTs - startTs) + "ms"); // время выполнения пула потоков
     }
 
     public static String generateText(String letters, int length) {
