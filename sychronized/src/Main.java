@@ -1,63 +1,73 @@
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class Main {
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
-        String[] texts = new String[25];
-        for (int i = 0; i < texts.length; i++) {
-            texts[i] = generateText("aab", 30_000);
-        }
-        long startTs = System.currentTimeMillis(); // start time
-        final ExecutorService threadPoll = Executors.newFixedThreadPool(4);
-        List<Future<Integer>> list = new ArrayList<>();
+public class Main implements Runnable {
+    private static final String letters = "RLRFR";
+    private static final int length = 100;
+    public static final Map<Integer, Integer> sizeToFreq = new ConcurrentHashMap<>();
 
-        for (String text : texts) {
-            Callable<Integer> myCallable = () -> {
-                int maxSize = 0;
-                for (int i = 0; i < text.length(); i++) {
-                    for (int j = 0; j < text.length(); j++) {
-                        if (i >= j) {
-                            continue;
-                        }
-                        boolean bFound = false;
-                        for (int k = i; k < j; k++) {
-                            if (text.charAt(k) == 'b') {
-                                bFound = true;
-                                break;
-                            }
-                        }
-                        if (!bFound && maxSize < j - i) {
-                            maxSize = j - i;
-                        }
-                    }
-                }
-                System.out.println(text.substring(0, 100) + " -> " + maxSize);
-                return maxSize;
-            };
-            list.add(threadPoll.submit(myCallable));
+    public static void main(String[] args) throws InterruptedException {
+        int threads = 1000;
+
+        for (int i = 0; i < threads; i++) {
+            new Thread(new Main()).start();
         }
-        int resultMax = 0;
-        for (Future<Integer> fut : list) {
-            try {
-                if (resultMax < fut.get()) {
-                    resultMax = fut.get();
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                return;
+
+        // Ждем завершения всех потоков
+        Thread.sleep(threads);
+
+        // Вывод результатов
+        int maxFreq = 0;
+        System.out.println("Самое частое количество повторений:");
+        for (Map.Entry<Integer, Integer> entry : sizeToFreq.entrySet()) {
+            maxFreq = Math.max(maxFreq, entry.getValue());
+        }
+        for (Map.Entry<Integer, Integer> entry : sizeToFreq.entrySet()) {
+            if (entry.getValue() == maxFreq) {
+                System.out.println(entry.getKey() + " (встретилось " + maxFreq + " раз)");
             }
         }
-        long endTs = System.currentTimeMillis(); // end time
-        System.out.println("Time: " + (endTs - startTs) + " ms");
-        System.out.println("максимальный интервал значений среди всех строк:  " + resultMax);
-        threadPoll.shutdown();
+
+        System.out.println("Другие размеры:");
+        for (Map.Entry<Integer, Integer> entry : sizeToFreq.entrySet()) {
+            if (entry.getValue() != maxFreq) {
+                System.out.println("- " + entry.getKey() + " (" + entry.getValue() + " раз)");
+            }
+        }
     }
 
-    public static String generateText(String letters, int length) {
+    public static String generateRoute(String letters, int length) {
         Random random = new Random();
-        StringBuilder text = new StringBuilder();
+        StringBuilder route = new StringBuilder();
         for (int i = 0; i < length; i++) {
-            text.append(letters.charAt(random.nextInt(letters.length())));
+            route.append(letters.charAt(random.nextInt(letters.length())));
         }
-        return text.toString();
+        return route.toString();
+    }
+
+    @Override
+    public void run() {
+        String route = generateRoute(letters, length);
+        updateSizeToFreq(route);
+    }
+
+    public void updateSizeToFreq(String route) {
+        int currentSequence = 0;
+        for (int i = 0; i < route.length(); i++) {
+            if (route.charAt(i) == 'R') {
+                currentSequence++;
+            } else if (currentSequence > 0) {
+                synchronized (sizeToFreq) {
+                    sizeToFreq.put(currentSequence, sizeToFreq.getOrDefault(currentSequence, 0) + 1);
+                }
+                currentSequence = 0;
+            }
+        }
+        if (currentSequence > 0) {
+            synchronized (sizeToFreq) {
+                sizeToFreq.put(currentSequence, sizeToFreq.getOrDefault(currentSequence, 0) + 1);
+            }
+        }
     }
 }

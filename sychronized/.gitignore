@@ -2,7 +2,7 @@
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
-
+sychronized.iml
 ### Eclipse ###
 .idea
 .apt_generated
